@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const dishRouter = express.Router();
 dishRouter.use(bodyParser.json());
-const mongoose=require('mongoose');
+//const mongoose=require('mongoose');
 const Dishes=require('../models/dishes');
 
 //operaciones sobre todos los dishes

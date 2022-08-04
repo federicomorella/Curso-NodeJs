@@ -2,45 +2,101 @@ const express=require('express');
 const bodyParser=require('body-parser');
 const promoRouter=express.Router();
 promoRouter.use(bodyParser.json());
+//const mongoose=require('mongoose');
+const Promotions=require('../models/promotions');
+
 
 promoRouter.route('/')
-.all((req,res,next)=>{
-    res.status=200;
-    res.setHeader('Content-Type','text/plain')
-    next();
-})
-.get((req,res,next)=>{
-    res.end('will send promos');
+.get(async (req,res,next)=>{
+    try{
+        const promos=await Promotions.find({});
+        res.setHeader('Content-Type','Application/json');
+        res.statusCode=200;
+        res.json(promos); 
+    }
+    catch(err){
+        return next(err);
+    }
 })
 .put((req,res,next)=>{
     res.statusCode=403;
-    res.end('PUT operation not supported');
+    res.end('PUT operation not supported on Promotions');
 })
-.post((req,res,next)=>{
-    res.end('will add promo: '+ JSON.stringify( req.body));
+.post(async (req,res,next)=>{
+    try{
+        const promo=await Promotions.create(req.body);
+        res.statusCode=200;
+        res.setHeader('Content-Type','Application/json');
+        res.json(promo);
+    }
+    catch(err){
+        return next(err);
+    }
 })
-.delete((req,res,next)=>{
-    res.end('will delete all promos');
+.delete(async (req,res,next)=>{
+    try{
+        const resp=await Promotions.deleteMany({});
+        res.statusCode=200;
+        res.setHeader('Content-Type','Application/json');
+        res.json(resp);
+    }
+    catch(err){
+        return next(err);
+    }
 })
 
 promoRouter.route('/:promoID')
-.all((req,res,next)=>{
-    res.status=200;
-    res.setHeader('Content-Type','text/plain')
-    next();
+.get(async (req,res,next)=>{
+    try{
+        const promo=await Promotions.findById(req.params.promoID);
+        if(promo!=null){
+            res.statusCode=200;
+            res.setHeader('Content-Type','Application/json');
+            res.json(promo);
+        }
+        else{
+            err=new Error('Promotion ' + req.params.promoID +' not found');
+            err.status=404;
+            return next(err);
+        }
+    }
+    catch(err){
+        return next(err);
+    }
 })
-.get((req,res,next)=>{
-    res.end('will send details of promo '+ req.params.promoID);
-})
-.put((req,res,next)=>{
-    res.end('Will update promo '+ req.params.promoID + '\n' + JSON.stringify(req.body));
+.put(async (req,res,next)=>{
+    try{
+        const promo= await Promotions.findByIdAndUpdate(req.params.promoID,req.body,{new:true});
+        if(promo!=null){
+            res.statusCode=200;
+            res.setHeader('Content-Type','Application/json');
+            res.json(promo);
+        }
+        else{
+            err=new Error('Promotion ' + req.params.promoID +' not found or couldn\'t be updated');
+            err.status=404;
+            return next(err);
+        }
+    }
+    catch(err){
+        return next(err);
+    }
+    
 })
 .post((req,res,next)=>{
     res.statusCode=403;
     res.end('POST operation not supported');
 })
-.delete((req,res,next)=>{
-    res.end('will delete promo ' + req.params.promoID) ;
+.delete(async (req,res,next)=>{
+    try{
+        const resp=await Promotions.findByIdAndRemove(req.params.promoID);
+        res.statusCode=200;
+        res.setHeader('Content-Type','Application/json');
+        res.json(resp);
+    }
+    catch(err){
+        return next(err);
+    }    
 });
 
 module.exports=promoRouter;
