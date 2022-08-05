@@ -25,11 +25,41 @@ var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
-app.use(logger('dev'));
+app.use(logger('dev')); 
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+
+//cada .use recive los parametros req,res y next y los va pasando en orden de aparición al próximo .use
+//en este punto intercalo el middleware de autenticación de usuario
+function auth(req,res,next){
+  console.log(req.headers);
+  var authHeader=req.headers.authorization;
+  if(!authHeader){
+    var err=new Error('You are not authenticated!')
+    res.setHeader('WWW-Authenticate','Basic') //contesta exigiendo que se autorice
+    err.status=401; //unauthorized
+    return next(err);
+  }
+
+  var auth= new Buffer.from(authHeader.split(' ')[1],'base64').toString().split(':'); //en el header aparece "username:password" codificado en base64
+  var username=auth[0];
+  var password=auth[1];
+  console.log(username + ' , '+ password);
+  if(username==='admin' && password==='password'){   
+    next();
+  }
+  else{
+    var err=new Error('Wrong username or password')
+    res.setHeader('WWW-Authenticate','Basic') //contesta exigiendo que se autorice
+    err.status=401; //unauthorized
+    return next(err);
+  }
+}
+
+app.use(auth);
+
+app.use(express.static(path.join(__dirname, 'public')));//servidor estático
 
 app.use('/', indexRouter);
 app.use('/users', usersRouter);
