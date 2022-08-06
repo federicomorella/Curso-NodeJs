@@ -3,6 +3,9 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var session=require('express-session');
+var FileStore=require('session-file-store')(session);
+
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
@@ -30,13 +33,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 //cookieParser agrega signedCookies a req
-app.use(cookieParser('123-456-789-0987')); //define la clave secreta para firmar las cookies. Puede ser cualquier string
+//app.use(cookieParser('123-456-789-0987')); //define la clave secreta para firmar las cookies. Puede ser cualquier string
 
+//session envía una cookie con el nombre definido en name firmada con secret
+app.use(session({ //configura session. 
+  name:'session-id',
+  secret:'123-456-7890',
+  saveUninitialized:false,
+  resave:false,
+  store:new FileStore()
+}));
 
 //cada .use recive los parametros req,res y next y los va pasando en orden de aparición al próximo .use
 //en este punto intercalo el middleware de autenticación de usuario
 function auth(req,res,next){
-  if(!req.signedCookies.user){//si no existe signedCookies es porque no está autenticado
+  if(!req.session.user){//verifica si existe session
     var authHeader=req.headers.authorization;
     if(!authHeader){
       var err=new Error('You are not authenticated!')
@@ -49,9 +60,8 @@ function auth(req,res,next){
     var username=auth[0];
     var password=auth[1];
     if(username==='admin' && password==='password'){   
-      //agrega una cookie llamada user con el valor admin firmado
-      res.cookie('user','admin',{signed:true}) //si las credenciales son correctas le manda una cookie al cliente para que la incluya en cada request
-      console.log('sending cookie');
+      req.session.user='admin';
+      console.log('sending session');
       return next();
     }
     else{
@@ -62,7 +72,7 @@ function auth(req,res,next){
     }
   }
   else{//si req incluye la cookie user
-    if(req.signedCookies.user==='admin'){
+    if(req.session.user==='admin'){
       return next()
     }
     else{
